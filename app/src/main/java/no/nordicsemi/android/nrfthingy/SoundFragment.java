@@ -510,7 +510,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                     //ID=127, set dummy data include 100 elements for testing purpose
                     if(mClhID==127) {
                         //mClhID = 1;
-                        byte clhPacketID=1;
+                        byte clhPacketID = 1;
                         mClhThingySoundPower = 100;
                         mClhData.setSourceID(mClhID);
                         mClhData.setPacketID(clhPacketID);
@@ -519,19 +519,30 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         mClhData.setThingyId(mClhThingyID);
                         mClhData.setThingyDataType(mClhThingyType);
                         mClhData.setSoundPower(mClhThingySoundPower);
-                        mClhAdvertiser.addAdvPacketToBuffer(mClhData,true);
+                        mClhAdvertiser.addAdvPacketToBuffer(mClhData, true);
                         for (int i = 0; i < 100; i++) {
                             ClhAdvertisedData clh = new ClhAdvertisedData();
                             clh.Copy(mClhData);
                             //Log.i(LOG_TAG, "Array old:" + Arrays.toString(clh.getParcelClhData()));
                             mClhThingySoundPower += 10;
                             clh.setSoundPower(mClhThingySoundPower);
-                            mClhAdvertiser.addAdvPacketToBuffer(clh,true);
+                            mClhAdvertiser.addAdvPacketToBuffer(clh, true);
 
                             Log.i(LOG_TAG, "Add array:" + Arrays.toString(clh.getParcelClhData()));
                             Log.i(LOG_TAG, "Array new size:" + mClhAdvertiser.getAdvertiseList().size());
                         }
-                      }
+                    } else if (mClhID>0) {
+                        // send discovery broadcast
+                        byte clhPacketID = 1;
+                        mClhData.setSourceID(mClhID);
+                        mClhData.setPacketID(clhPacketID);
+                        mClhData.setDestId(mClhDestID);
+                        mClhData.setHopCount(mClhHops);
+                        mClhData.setThingyId(mClhThingyID);
+                        mClhData.setThingyDataType(mClhThingyType);
+                        mClhData.set
+                        mClhAdvertiser.addAdvPacketToBuffer(mClhData, true);
+                    }
 
                     mClhAdvertiser.nextAdvertisingPacket(); //start advertising
                 }

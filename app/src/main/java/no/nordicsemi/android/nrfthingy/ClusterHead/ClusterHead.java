@@ -17,7 +17,7 @@ public class ClusterHead {
     private final ClhProcessData mClhProcessData=new ClhProcessData(mClhProcDataList,MAX_PROCESS_LIST_ITEM);
     public ClusterHead(){}
 
-    //construtor,
+    //constructor,
     //params: id: cluster head ID
     public ClusterHead(byte id)
     {

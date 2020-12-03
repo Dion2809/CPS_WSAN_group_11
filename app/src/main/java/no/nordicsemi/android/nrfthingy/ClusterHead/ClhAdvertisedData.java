@@ -16,6 +16,7 @@ public class ClhAdvertisedData   {
     private static final int SOUND_POWER_POSH=6;
     private static final int SOUND_POWER_POSL=7;
 
+
     private static final int CLH_ARRAY_SIZE=SOUND_POWER_POSL+1;
     byte[] ClhAdvData=new byte[CLH_ARRAY_SIZE];
 
@@ -76,6 +77,7 @@ public class ClhAdvertisedData   {
         Log.i("Sound power:", "Sound power:"+ClhAdvData[SOUND_POWER_POSH]);
         Log.i("Sound power:", "Sound power:"+ClhAdvData[SOUND_POWER_POSL]);
     }
+
 
     public void setThingyId(byte id){
         ClhAdvData[THINGY_ID_POS] = (byte)(id & 0x00FF);

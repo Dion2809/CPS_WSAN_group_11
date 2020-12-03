@@ -6,9 +6,12 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 import android.util.SparseArray;
+
+import androidx.annotation.RequiresApi;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -51,6 +54,7 @@ public class ClhScan {
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public int BLE_scan() {
         boolean result=true;
         byte[] advsettings=new byte[16];
@@ -204,18 +208,23 @@ public class ClhScan {
             //add receive data to Advertise list or Process List
             //Log.i(LOG_TAG," add history"+ (receiverID>>8)+ "  "+(receiverID&0xFF) );
             //Log.i(LOG_TAG," manufacturer value"+ Arrays.toString(manufacturerData.valueAt(0)) );
-
+            //id 0 is discovery packet
             clhAdvData.parcelAdvData(manufacturerData,0);
             if(mIsSink)
             {//if this Cluster Head is the Sink node (ID=0), add data to waiting process list
-                    mClhProcessData.addProcessPacketToBuffer(clhAdvData);
-                    Log.i(LOG_TAG, "Add data to process list, len:" + mClhProcDataList.size());
+                mClhProcessData.addProcessPacketToBuffer(clhAdvData);
+                Log.i(LOG_TAG, "Add data to process list, len:" + mClhProcDataList.size());
+
+                //flooding message received at sink, send route back
+                if ((receiverID&0xFF) == 0) {
+                    manufacturerData.get();
+                }
             }
             else {//normal CLuster Head (ID 0..127) add data to advertising list to forward
-                    mClhAdvertiser.addAdvPacketToBuffer(clhAdvData,false);
-                    Log.i(LOG_TAG, "Add data to advertised list, len:" + mClhAdvDataList.size());
-                    Log.i(LOG_TAG, "Advertise list at " + (mClhAdvDataList.size() - 1) + ":"
-                            + Arrays.toString(mClhAdvDataList.get(mClhAdvDataList.size() - 1).getParcelClhData()));
+                mClhAdvertiser.addAdvPacketToBuffer(clhAdvData,false);
+                Log.i(LOG_TAG, "Add data to advertised list, len:" + mClhAdvDataList.size());
+                Log.i(LOG_TAG, "Advertise list at " + (mClhAdvDataList.size() - 1) + ":"
+                        + Arrays.toString(mClhAdvDataList.get(mClhAdvDataList.size() - 1).getParcelClhData()));
             }
         }
     }
