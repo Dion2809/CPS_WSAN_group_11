@@ -46,7 +46,10 @@ public class ClhRoutingData extends ClhAdvertisedData {
 
     // Compile routing bytes into a single array and return it
     public Byte[] getRouting() {
-        Byte[] routing = new Byte[8];
+        Byte[] routing = new Byte[ROUTING_BYTES];
+        for (int i = 0; i < ROUTING_BYTES; i++) {
+            routing[i] = -1;
+        }
         int j = 0;
         for (int i = ROUTING0; i < (ROUTING_BYTES+ROUTING0); i++) {
             routing[j] = ClhAdvData[i];

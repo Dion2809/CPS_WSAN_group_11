@@ -539,17 +539,22 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                             Log.i(LOG_TAG, "Array new size:" + mClhAdvertiser.getAdvertiseList().size());
                         }
                     } else if (mClhID>0) {
-                        if (!discoverySent) {
-                            // send discovery broadcast
+                        // send discovery broadcast
+                        for (int i = 0; i < 10; i++) {
                             byte clhPacketID = 0;
                             mClhDiscovery.setPacketID(clhPacketID);
                             mClhDiscovery.setSourceID(mClhID);
                             mClhDiscovery.setDestId(mClhDestID);
                             mClhDiscovery.setHopCount(mClhHops);
-                            mClhDiscovery.setNextHop((byte)-1); //for broadcast
+                            mClhDiscovery.setNextHop((byte) -1); //for broadcast
                             mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
                             Log.i("Discovery sent", "Discovery sent");
                             discoverySent = true;
+                            try {
+                                Thread.sleep(50);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
 
