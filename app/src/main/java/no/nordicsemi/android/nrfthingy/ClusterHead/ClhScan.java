@@ -6,9 +6,12 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 import android.util.SparseArray;
+
+import androidx.annotation.RequiresApi;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -51,6 +54,7 @@ public class ClhScan {
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public int BLE_scan() {
         boolean result=true;
         byte[] advsettings=new byte[16];

@@ -58,6 +58,7 @@ public class VoiceVisualizer extends SurfaceView implements SurfaceHolder.Callba
     private final Object mLock = new Object();
     private boolean isDrawing = false;
 
+
     private int mWidth, mHeight;
 
     private Paint mLinePaint;
@@ -117,7 +118,7 @@ public class VoiceVisualizer extends SurfaceView implements SurfaceHolder.Callba
      *
      * @param pcm the decoded PCM byte array where each sample is defined by 2 bytes
      */
-    public void draw(final byte[] pcm) {
+    public void draw(final byte[] pcm) { //1000 steps, 70
         if (mCurrentBuffer == null) // Surface not created yet or destroyed (orientation changes)
             return;
 

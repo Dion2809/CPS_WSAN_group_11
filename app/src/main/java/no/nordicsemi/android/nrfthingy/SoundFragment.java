@@ -98,6 +98,12 @@ import no.nordicsemi.android.thingylib.ThingyListenerHelper;
 import no.nordicsemi.android.thingylib.ThingySdkManager;
 import no.nordicsemi.android.thingylib.utils.ThingyUtils;
 
+import static java.lang.Math.PI;
+import static java.lang.Math.cos;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static java.lang.Math.sinh;
+
 public class SoundFragment extends Fragment implements PermissionRationaleDialogFragment.PermissionDialogListener {
 
 
@@ -118,6 +124,45 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     private ThingySdkManager mThingySdkManager;
     private boolean mStartRecordingAudio = false;
     private boolean mStartPlayingAudio = false;
+
+    private boolean soundDetected = false;
+    private int soundCounter = 0;
+    private final int WINDOW_RANGE = 1000;
+    private int Fs = 8000;
+    private int F0 = 2500; // 1200
+    private int F1 = 1200;
+    private double BW0 = 0.33;
+    private int gain0 = 40;
+
+    private double A0 = pow(10, gain0/40);
+    private double w0 = 2*PI*F0/Fs;
+    private double c0 = cos(w0);
+    private double s0 = sin(w0);
+    private double alpha0 = s0 * sinh((0.6931/2) * BW0 * w0/s0);
+
+    private double a0 =   1 + alpha0/A0;
+    private double b0 =   (1 + alpha0*A0) / a0;
+    private double b1 =  (-2*c0) / a0;
+    private double b2 =   (1 - alpha0*A0) / a0;
+    private double a1 =  (-2*c0) / a0;
+    private double a2 =   (1 - alpha0/A0) / a0;
+
+    private double A1 = pow(10, gain0/40);
+    private double w1 = 2*PI*F1/Fs;
+    private double c1 = cos(w1);
+    private double s1 = sin(w1);
+    private double alpha1 = s1 * sinh((0.6931/2) * BW0 * w1/s1);
+
+    private double a00 =   1 + alpha1/A1;
+    private double b00 =   (1 + alpha1*A1) / a00;
+    private double b10 =  (-2*c1) / a00;
+    private double b20 =   (1 - alpha1*A1) / a00;
+    private double a10 =  (-2*c1) / a00;
+    private double a20 =   (1 - alpha0/A0) / a00;
+
+    private double xmem1 = 0, xmem2 = 0, ymem1 = 0, ymem2 = 0;
+
+
 
     private ThingyListener mThingyListener = new ThingyListener() {
         private Handler mHandler = new Handler();
@@ -246,8 +291,66 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
                     //PSG edit No.1
                     //audio receive event
-                    if( mStartPlayingAudio = true)
-                         mClhAdvertiser.addAdvSoundData(data);
+                    if( mStartPlayingAudio = true) {
+                        mClhAdvertiser.addAdvSoundData(data);
+//                        Log.v("MainActivity", "size of data array: " + data.length + "\n");
+                        double[] y = new double[data.length];
+                        double total = 0;
+                        for(int i = 0; i < data.length; i++) {
+                            y[i] = b0*Integer.parseInt(String.valueOf(data[i])) + b1*xmem1 + b2*xmem2 - a1*ymem1 - a2*ymem2;
+
+                            xmem2 = xmem1;
+                            xmem1 = Integer.parseInt(String.valueOf(data[i]));
+                            ymem2 = ymem1;
+                            ymem1 = y[i];
+                            total += y[i];
+                        }
+
+                        double avg0 = total/data.length;
+                        xmem1 = 0; xmem2 = 0; ymem1 = 0; ymem2 = 0;
+                        for(int i = 0; i < data.length; i++) {
+                            y[i] = b10*Integer.parseInt(String.valueOf(data[i])) + b10*xmem1 + b20*xmem2 - a10*ymem1 - a20*ymem2;
+
+                            xmem2 = xmem1;
+                            xmem1 = Integer.parseInt(String.valueOf(data[i]));
+                            ymem2 = ymem1;
+                            ymem1 = y[i];
+                            total += y[i];
+                        }
+
+                        double avg1 = total/data.length;
+
+                        double diff = avg0 - avg1;
+                        if(diff > 20)
+//                            Log.v("test", String.valueOf(diff));
+                        if(diff > 70) {
+                            Log.v("DATA", "CLAPPING DETECTED I GUESSS!!");
+
+                        }
+
+//                        for(int i = 0; i < data.length; i+=2) {
+//                           if(Integer.parseInt(String.valueOf(data[i])) > 70) {
+//                               if(!soundDetected) {
+////                                   Toast.makeText(context, "CLAP DETECTED!!!", Toast.LENGTH_LONG).show();
+//                                   Log.v("MESSAGE", "CLAP DETECTED!!!");
+//                                   soundDetected = true;
+//                                   soundCounter = 0;
+//                               } else {
+//                                   soundCounter = 0;
+//                               }
+//                           } else if(soundDetected || soundCounter != 0) {
+//                               soundCounter++;
+//                           }
+//                           if(soundCounter >= WINDOW_RANGE) {
+//                               soundCounter = 0;
+//                               soundDetected = false;
+//                           }
+//
+//                        }
+
+
+
+                    }
                     //End PSG edit No.1
 
                 }
