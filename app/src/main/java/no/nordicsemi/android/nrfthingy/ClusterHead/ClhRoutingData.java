@@ -33,8 +33,8 @@ public class ClhRoutingData extends ClhAdvertisedData {
     // Add the current id to the route list
     public void addToRouting(byte ID) {
         boolean routeAdded = false;
-        for (int i = ROUTING0; !routeAdded && i < ROUTING_BYTES; i++) {
-            if (ClhAdvData[i] == 0) {
+        for (int i = ROUTING0; !routeAdded && i < ROUTING0+ROUTING_BYTES; i++) {
+            if (ClhAdvData[i] == -1) {
                 ClhAdvData[i] = ID;
                 routeAdded = true;
             }

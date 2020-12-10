@@ -223,6 +223,11 @@ public class ClhScan {
                     ClhRoutingData clhRouteData = new ClhRoutingData();
                     clhRouteData.parcelAdvData(manufacturerData, 0);
                     Byte[] route = clhRouteData.getRouting();
+                    String routeString = "";
+                    for (int i = 0; i < route.length; i++) {
+                        routeString = routeString + route[i] + " ";
+                    }
+                    Log.i("Route received: ", routeString);
 
                     //get the next hop
                     byte dest = route[0];
@@ -249,6 +254,7 @@ public class ClhScan {
                     clhRouteData.setDestId(dest);
                     clhRouteData.setNextHop((byte) nextHop);
                     mClhAdvertiser.addAdvPacketToBuffer(clhRouteData, true);
+                    Log.i("Reply sent:", "Route Reply sent to: " + dest);
                 } else {// add data to waiting process list
                     mClhProcessData.addProcessPacketToBuffer(clhAdvData);
                     Log.i(LOG_TAG, "Add data to process list, len:" + mClhProcDataList.size());
