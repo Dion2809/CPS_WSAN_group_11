@@ -313,7 +313,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
                             xmem2 = xmem1;
                             xmem1 = Integer.parseInt(String.valueOf(data[i]));
-                            ymem2 = ymem1;
+                            ymem2 = ymem1; // test
                             ymem1 = y[i];
                             total += y[i];
                         }
