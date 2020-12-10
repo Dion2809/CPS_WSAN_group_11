@@ -1737,6 +1737,7 @@ public class ThingySdkManager {
      */
     public void enableThingyMicrophone(final BluetoothDevice device, boolean enable) {
         if (device != null) {
+            Log.v("data", "mBinder is " + mBinder.toString());
             if (mBinder != null) {
                 final ThingyConnection thingyConnection = mBinder.getThingyConnection(device);
                 if (thingyConnection != null) {

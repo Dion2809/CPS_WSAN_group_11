@@ -232,6 +232,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
         @Override
         public void onMicrophoneValueChangedEvent(BluetoothDevice bluetoothDevice, final byte[] data) {
+
             if (data != null) {
                 if (data.length != 0) {
 
@@ -246,8 +247,21 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
                     //PSG edit No.1
                     //audio receive event
-                    if( mStartPlayingAudio = true)
-                         mClhAdvertiser.addAdvSoundData(data);
+                    if( mStartPlayingAudio = true) {
+                        Log.v("data", bluetoothDevice.toString());
+//                        Log.v("MainActivity", "size of data array: " + data.length + "\n");
+                        String Data = "Data1,";
+                        int average = 0;
+                        for(int i = 0; i<data.length;i+= 2) {
+                            average = average + Integer.parseInt(String.valueOf(data[i]));
+                            Data = Data + "," + String.valueOf(data[i]);
+//                            Log.v("data", String.valueOf(data[i]));
+                        }
+                        average = average / data.length;
+//                        Log.v("DATA", Data);
+//                        Log.v("data", String.valueOf(average));
+                        mClhAdvertiser.addAdvSoundData(data);
+                    }
                     //End PSG edit No.1
 
                 }
@@ -407,14 +421,23 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
          mThingy.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 if (mThingySdkManager.isConnected(mDevice)) {
                     if (!mStartPlayingAudio) {
                         mStartPlayingAudio = true;
                         startThingyOverlayAnimation();
-
-                        mThingySdkManager.enableThingyMicrophone(mDevice, true);
+                        // making sure that when the thingy button for listening is pressed all connected thingys start to listen.
+                        for(int i = 0; i<mThingySdkManager.getConnectedDevices().size(); i++) {
+                            BluetoothDevice device = mThingySdkManager.getConnectedDevices().get(i); // selecting the device in the list in corresponding with i
+                            Log.v("data", "Device is: " + device.getName());
+                            mThingySdkManager.enableThingyMicrophone(device, true); // enabeling all thingys to listen
+                        }
                     } else {
-                        mThingySdkManager.enableThingyMicrophone(mDevice, false);
+                        // making sure that when the thingy button for listening is pressed all connected thingys start to listen.
+                        for(int i = 0; i<mThingySdkManager.getConnectedDevices().size(); i++) {
+                            BluetoothDevice device = mThingySdkManager.getConnectedDevices().get(i); // selecting the device in the list in corresponding with i
+                            mThingySdkManager.enableThingyMicrophone(device, false); // disabeling all thingys from listening
+                        }
                         stopThingyOverlayAnimation();
                         mStartPlayingAudio = false;
                     }

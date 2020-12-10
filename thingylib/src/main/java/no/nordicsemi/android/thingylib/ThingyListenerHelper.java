@@ -44,8 +44,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
+
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -326,12 +329,21 @@ public class ThingyListenerHelper {
                     break;
                 case ThingyUtils.MICROPHONE_NOTIFICATION:
                     final byte [] data = intent.getExtras().getByteArray(ThingyUtils.EXTRA_DATA_PCM);
+                    ThingySdkManager mThingySdkManager = ThingySdkManager.getInstance();
                     if(globalListener != null) {
-                        globalListener.onMicrophoneValueChangedEvent(device, data);
+                        for(int i = 0; i < mThingySdkManager.getConnectedDevices().size(); i++){
+                            BluetoothDevice deviceMultiple = mThingySdkManager.getConnectedDevices().get(i);
+                            globalListener.onMicrophoneValueChangedEvent(deviceMultiple, data);
+                        }
+
                     }
 
                     if(thingyListener != null) {
-                        thingyListener.onMicrophoneValueChangedEvent(device, data);
+                        for(int i = 0; i < mThingySdkManager.getConnectedDevices().size(); i++){
+                            BluetoothDevice deviceMultiple = mThingySdkManager.getConnectedDevices().get(i);
+                            thingyListener.onMicrophoneValueChangedEvent(deviceMultiple, data);
+                        }
+
                     }
                     break;
             }

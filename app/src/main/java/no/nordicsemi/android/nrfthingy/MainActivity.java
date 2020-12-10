@@ -99,7 +99,9 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import no.nordicsemi.android.nrfthingy.common.AboutActivity;
+import no.nordicsemi.android.nrfthingy.common.DeviceListAdapter;
 import no.nordicsemi.android.nrfthingy.common.EnableNFCDialogFragment;
+import no.nordicsemi.android.nrfthingy.common.ExtendedBluetoothDevice;
 import no.nordicsemi.android.nrfthingy.common.MessageDialogFragment;
 import no.nordicsemi.android.nrfthingy.common.NFCTagFoundDialogFragment;
 import no.nordicsemi.android.nrfthingy.common.PermissionRationaleDialogFragment;
@@ -163,6 +165,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         DfuUpdateAvailableDialogFragment.DfuUpdateAvailableListener,
         NFCTagFoundDialogFragment.OnNfcTagFound,
         EnableNFCDialogFragment.EnableNFCDialogFragmentListener {
+    // comment to mimic
 
     private static final int SCAN_DURATION = 15000;
     private LinearLayout mLocationServicesContainer;
@@ -652,7 +655,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
             case R.id.action_disconnect:
                 if (mThingySdkManager != null) {
-                    mThingySdkManager.disconnectFromThingy(mDevice);
+                    final ArrayList<Thingy> thingyList = mDatabaseHelper.getSavedDevices();
+                    if(thingyList.size()!=0){
+                        for(int i = 0; i < thingyList.size();i++) {
+                            BluetoothDevice devices = getBluetoothDevice(this, thingyList.get(i).getDeviceAddress());
+                            mThingySdkManager.disconnectFromThingy(devices);
+                        }
+                    }
                 }
                 break;
             case R.id.action_settings:
@@ -984,10 +993,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void connect() {
-        mThingySdkManager.connectToThingy(this, mDevice, ThingyService.class);
-        final Thingy thingy = new Thingy(mDevice);
-        mThingySdkManager.setSelectedDevice(mDevice);
-        updateSelectionInDb(thingy, true);
+        final ArrayList<Thingy> thingyList = mDatabaseHelper.getSavedDevices();
+        if(thingyList.size()!=0){
+            for(int i = 0; i < thingyList.size();i++){
+                BluetoothDevice devices = getBluetoothDevice(this,thingyList.get(i).getDeviceAddress());
+                mThingySdkManager.connectToThingy(this, devices, ThingyService.class);
+                final Thingy thingy = new Thingy(devices);
+                mThingySdkManager.setSelectedDevice(devices);
+                updateSelectionInDb(thingy, true);
+            }
+        }
+//        mThingySdkManager.connectToThingy(this, mDevice, ThingyService.class);
+//        final Thingy thingy = new Thingy(mDevice);
+//        mThingySdkManager.setSelectedDevice(mDevice);
+//        updateSelectionInDb(thingy, true);
+
+
     }
 
     private void connect(final BluetoothDevice device) {
@@ -1599,6 +1620,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
         final ScanSettings settings = new ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).setUseHardwareBatchingIfSupported(false).setUseHardwareFilteringIfSupported(false).build();
+        Log.v("data",settings.toString());
         final List<ScanFilter> filters = new ArrayList<>();
         filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(ThingyUtils.THINGY_BASE_UUID)).build());
         scanner.startScan(filters, settings, mScanCallback);
@@ -1645,6 +1667,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         @Override
         public void onScanResult(final int callbackType, @NonNull final ScanResult result) {
             // do nothing
+            Log.v("data", "results are " + result.toString());
             final BluetoothDevice device = result.getDevice();
             if (mAddress != null && mAddress.equals(device.getAddress())) {
                 mProgressHandler.removeCallbacks(mProgressDialogRunnable);
