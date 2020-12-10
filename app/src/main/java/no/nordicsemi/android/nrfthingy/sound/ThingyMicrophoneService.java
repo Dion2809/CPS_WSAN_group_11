@@ -109,7 +109,7 @@ public class ThingyMicrophoneService extends IntentService {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mAudioBroadcastReceiver);
     }
 
-    public void startRecordingAudio(final BluetoothDevice device) {
+    public void startRecordingAudio(final android.bluetooth.BluetoothDevice device) {
         if (mStartRecordingAudio) {
             return;
         }
