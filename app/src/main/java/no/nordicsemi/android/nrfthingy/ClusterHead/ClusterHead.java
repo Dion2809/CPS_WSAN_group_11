@@ -1,6 +1,13 @@
 package no.nordicsemi.android.nrfthingy.ClusterHead;
 
+import android.os.Build;
+import android.util.Log;
+
+import androidx.annotation.RequiresApi;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class ClusterHead {
@@ -15,6 +22,7 @@ public class ClusterHead {
 
     private final ArrayList<ClhAdvertisedData> mClhProcDataList =new ArrayList<>(MAX_PROCESS_LIST_ITEM);
     private final ClhProcessData mClhProcessData=new ClhProcessData(mClhProcDataList,MAX_PROCESS_LIST_ITEM);
+
     public ClusterHead(){}
 
     //constructor,
@@ -39,6 +47,7 @@ public class ClusterHead {
     // init Cluster Head BLE: include
     // init Advertiser
     // init Scanner
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public int initClhBLE(long advertiseInterval)
     {
         int error;
@@ -62,6 +71,7 @@ public class ClusterHead {
         return error;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public int initClhBLEScaner() {
         int error;
         mClhScanner.setAdvDataObject(mClhAdvertiser);
@@ -94,5 +104,4 @@ public class ClusterHead {
     {
         mClhAdvertiser.clearAdvList();
     }
-
 }
