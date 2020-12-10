@@ -10,6 +10,9 @@
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/225b6fc0741e9909cb1f5926db130a69/jetified-rajawali-1.0.325/AndroidManifest.xml" />
       <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/225b6fc0741e9909cb1f5926db130a69/jetified-rajawali-1.0.325/jars/classes.jar!/" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/225b6fc0741e9909cb1f5926db130a69/jetified-rajawali-1.0.325/res" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/b961b32ea1af982bdefc47be316b1e0e/jetified-rajawali-1.0.325/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/b961b32ea1af982bdefc47be316b1e0e/jetified-rajawali-1.0.325/AndroidManifest.xml" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/b961b32ea1af982bdefc47be316b1e0e/jetified-rajawali-1.0.325/res" />
     </CLASSES>
     <JAVADOC>
       <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.rajawali3d/rajawali/1.0.325/d40f9cc50f99098387c60b83666ad9ddc705e5b8/rajawali-1.0.325-javadoc.jar!/" />

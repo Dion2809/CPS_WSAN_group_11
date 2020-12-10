@@ -19,9 +19,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static no.nordicsemi.android.nrfthingy.ClusterHead.ClhRoutingData.ROUTING0;
-import static no.nordicsemi.android.nrfthingy.ClusterHead.ClhRoutingData.ROUTING_BYTES;
-
 public class ClhScan {
     private BluetoothAdapter mAdapter = BluetoothAdapter.getDefaultAdapter();
     private BluetoothLeScanner mCLHscanner ;
@@ -214,6 +211,11 @@ public class ClhScan {
             //Log.i(LOG_TAG," manufacturer value"+ Arrays.toString(manufacturerData.valueAt(0)) );
             //id 0 is discovery packet
             clhAdvData.parcelAdvData(manufacturerData,0);
+            Log.i("Packet received", "Source id:" + clhAdvData.getSourceID() + "\n" +
+                    "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+                    "Packet id: " + clhAdvData.getPacketID() + "\n" +
+                    "Next hop: " + clhAdvData.getNextHop());
+
             if(mIsSink) {
                 //route request received at sink, send route back
                 if ((receiverID & 0xFF) == 0) {

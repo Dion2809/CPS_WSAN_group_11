@@ -548,6 +548,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                             mClhDiscovery.setHopCount(mClhHops);
                             mClhDiscovery.setNextHop((byte)-1); //for broadcast
                             mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
+                            Log.i("Discovery sent", "Discovery sent");
                             discoverySent = true;
                         }
                     }
