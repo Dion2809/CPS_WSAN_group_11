@@ -12,6 +12,8 @@ import android.util.Log;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -55,8 +57,10 @@ public class ClhAdvertise {
     private byte[] mAdvsettings=new byte[32];
     private byte mClhID=1;
     private boolean mIsSink=false;
-    private byte mCurrentPacketID= (byte) 1;
+    private byte mCurrentPacketID= (byte) 2;
     private ArrayList<ClhAdvertisedData >mClhAdvDataList;
+
+    private Map<Byte,Byte[]> nextHopMap = new HashMap<>();
 
     public ClhAdvertise(){//constructor with no params
         mClhAdvDataList= new ArrayList<ClhAdvertisedData>(MAX_ADVERTISE_LIST_ITEM);
@@ -196,7 +200,7 @@ public class ClhAdvertise {
     public void addAdvPacketToBuffer(ClhAdvertisedData data,boolean isOrginal)
     {
         if(mClhAdvDataList.size()<mMaxAdvAllowable) {
-            if(isOrginal) {//this packet come from this device-> increase PacketID
+            if(isOrginal && data.getPacketID() > 1) {//this packet come from this device-> increase PacketID
                 mCurrentPacketID++;
                 data.setPacketID(mCurrentPacketID);
             }
@@ -435,5 +439,24 @@ public class ClhAdvertise {
     public final byte[] getAdvSettings()
     {
         return mAdvsettings;
+    }
+
+    //add the next hop in the route to the next hop map of this cluster head
+    public void addRoute(byte dest, byte nextHop, byte hopCount) {
+        nextHopMap.put(dest, new Byte[]{nextHop, hopCount});
+        Log.i("Next hop", "Next hop for " + dest + ": " + nextHop);
+    }
+
+    public Byte getNextHop(byte dest) {
+        if (nextHopMap.get(dest) == null) {
+            return -1; //will become broadcast if undefined
+        }
+        return nextHopMap.get(dest)[0];
+    }
+    public Byte hopsToDest(byte dest) {
+        if (nextHopMap.get(dest) == null) {
+            return null;
+        }
+        return nextHopMap.get(dest)[1];
     }
 }

@@ -11,13 +11,13 @@ public class ClhAdvertisedData   {
     private static final int PACKET_CLH_ID_POS=1;
     private static final int DEST_CLH_ID_POS=2;
     private static final int HOP_COUNT_POS=3;
-    private static final int THINGY_ID_POS=4;
-    private static final int THINGY_DATA_TYPE_POS=5;
-    private static final int SOUND_POWER_POSH=6;
-    private static final int SOUND_POWER_POSL=7;
+    private static final int NEXT_HOP=4;
+    private static final int THINGY_ID_POS=5;
+    private static final int THINGY_DATA_TYPE_POS=6;
+    private static final int SOUND_POWER_POSH=7;
+    private static final int SOUND_POWER_POSL=8;
 
-
-    private static final int CLH_ARRAY_SIZE=SOUND_POWER_POSL+1;
+    private static final int CLH_ARRAY_SIZE = SOUND_POWER_POSL+1;
     byte[] ClhAdvData=new byte[CLH_ARRAY_SIZE];
 
 
@@ -69,6 +69,7 @@ public class ClhAdvertisedData   {
     {
         ClhAdvData[HOP_COUNT_POS]=hop;
     }
+    public void setNextHop(byte hop) { ClhAdvData[NEXT_HOP]=hop; }
 
     public void setSoundPower(int soundPower) {
         ClhAdvData[SOUND_POWER_POSH] = (byte) (soundPower >> 8);
@@ -112,11 +113,11 @@ public class ClhAdvertisedData   {
     {
         return ClhAdvData[HOP_COUNT_POS];
     }
+    public byte getNextHop() { return ClhAdvData[NEXT_HOP]; }
     public byte getThingyId(){return ClhAdvData[THINGY_ID_POS];}
     public byte getThingyDataType(){return ClhAdvData[THINGY_DATA_TYPE_POS];}
     public int getSoundPower()
     {
         return (ClhAdvData[SOUND_POWER_POSH]<<8)+((int)(ClhAdvData[SOUND_POWER_POSL])&0x00FF);
     }
-
 }
