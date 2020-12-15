@@ -1,3 +1,4 @@
+
 package no.nordicsemi.android.nrfthingy.ClusterHead;
 
 import android.bluetooth.BluetoothAdapter;
@@ -295,7 +296,7 @@ public class ClhScan {
                 if (clhAdvData.getDestinationID() != mClhID && (clhAdvData.getNextHop() == mClhID ||
                         clhAdvData.getNextHop() == -1)) {
                     //normal Cluster Head (ID 0..127) add data to advertising list to forward
-                    if(clhAdvData.getNextHop() != - 1) {
+                    if(clhAdvData.getNextHop() != -1) {
                         //set the next hop to the next hop for this cluster head as defined in the routing table
                         clhAdvData.setNextHop(mClhAdvertiser.getNextHop(clhAdvData.getDestinationID()));
                     }
