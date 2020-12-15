@@ -542,6 +542,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         // send discovery broadcast
                         for (int i = 0; i < 10; i++) {
                             byte clhPacketID = 0;
+                            mClhDiscovery = new ClhRoutingData();
                             mClhDiscovery.setPacketID(clhPacketID);
                             mClhDiscovery.setSourceID(mClhID);
                             mClhDiscovery.setDestId(mClhDestID);
