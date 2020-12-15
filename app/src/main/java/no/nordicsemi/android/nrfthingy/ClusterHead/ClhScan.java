@@ -147,6 +147,8 @@ public class ClhScan {
                 return;
             }
 
+            Log.i(LOG_TAG, "Ja hier2: " + result);
+
             SparseArray<byte[]> manufacturerData = result.getScanRecord().getManufacturerSpecificData(); //get data
             processScanData(manufacturerData);
         }
@@ -183,12 +185,15 @@ public class ClhScan {
         }
         int receiverID=manufacturerData.keyAt(0);
 
+        Log.i(LOG_TAG, "Ja hier: " + manufacturerData.toString());
+
         //reflected data (received cluster head ID = device Clh ID) -> skip
         if(mClhID==(receiverID>>8))
         {
             Log.i(LOG_TAG,"reflected data, mClhID "+mClhID +", recv:" +(receiverID>>8) );
             return;
         }
+
         Log.i(LOG_TAG,"ID data "+ (receiverID>>8)+ "  "+(receiverID&0xFF) );
 
         /* check packet has been yet recieved by searching the "unique packet ID" history list
@@ -197,7 +202,11 @@ public class ClhScan {
                         life counter: time of the packet lived in history list
           --------------*/
 
-        if (ClhScanHistoryArray.indexOfKey(manufacturerData.keyAt(0))<0)
+        ClhAdvertisedData test = new ClhAdvertisedData();
+        test.parcelAdvData(manufacturerData, 0);
+        int id = test.getPacketID();
+
+        if (ClhScanHistoryArray.indexOfKey(manufacturerData.keyAt(0))<0 || id == 0) // Not yet received or discovery packets
         {//not yet received
             //history not yet full, update new "unique packet ID" to history list, reset life counter
             if(ClhScanHistoryArray.size()<ClhConst.SCAN_HISTORY_LIST_SIZE)
@@ -211,14 +220,20 @@ public class ClhScan {
             //Log.i(LOG_TAG," manufacturer value"+ Arrays.toString(manufacturerData.valueAt(0)) );
             //id 0 is discovery packet
             clhAdvData.parcelAdvData(manufacturerData,0);
-            Log.i("Packet received", "Source id:" + clhAdvData.getSourceID() + "\n" +
-                    "Destination id: " + clhAdvData.getDestinationID() + "\n" +
-                    "Packet id: " + clhAdvData.getPacketID() + "\n" +
-                    "Next hop: " + clhAdvData.getNextHop());
+
+//            Log.i("Packet received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
+//                    "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+//                    "Packet id: " + clhAdvData.getPacketID() + "\n" +
+//                    "Next hop: " + clhAdvData.getNextHop() + "\n" +
+//                    "Hops left: " + clhAdvData.getHopCounts() + "\n" +
+//                    Arrays.toString(clhAdvData.ClhAdvData) + "\n");
 
             if(mIsSink) {
                 //route request received at sink, send route back
                 if ((receiverID & 0xFF) == 0) {
+
+                    Log.e(LOG_TAG, "SINK!!!!!");
+
                     //get the route
                     ClhRoutingData clhRouteData = new ClhRoutingData();
                     clhRouteData.parcelAdvData(manufacturerData, 0);
@@ -240,10 +255,13 @@ public class ClhScan {
                             break;
                         }
                     }
+
                     //add it if the route is better or there was no route stored yet
                     if (mClhAdvertiser.getNextHop(dest) == -1 ||
                             (mClhAdvertiser.getNextHop(dest) != -1 &&
                             clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
+                        Log.e(LOG_TAG, "Better route added!!");
+
                         mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
                     }
 
@@ -262,11 +280,26 @@ public class ClhScan {
             }
             else {
                 if (clhAdvData.getPacketID() == 0) {
+
+                    Log.i("Discovery received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
+                            "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+                            "Packet id: " + clhAdvData.getPacketID() + "\n" +
+                            "Next hop: " + clhAdvData.getNextHop() + "\n" +
+                            "Hops left: " + clhAdvData.getHopCounts());
+
                     //discovery message, add id to route
                     ClhRoutingData clhRouteData = new ClhRoutingData();
                     clhRouteData.parcelAdvData(manufacturerData, 0);
-                    clhRouteData.addToRouting(mClhID);
-                    clhAdvData = (ClhAdvertisedData) clhRouteData;
+
+                    clhRouteData.addToRouting(clhAdvData.getSourceID()); // Moet hier source ID van incoming packet of eigen ID, hier stond eerst eigen ID maar lijkt me onlogisch
+                    clhRouteData.setSourceID(mClhID); // Sets packet source ID as this CH's id before broadcasting it again
+                    clhAdvData = (ClhAdvertisedData) clhRouteData; // Het lijkt erop dat hij alle routing info verliest, kun je krijgen met clhRouteData.getRouting()
+
+                    mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, true);
+                    mClhAdvertiser.nextAdvertisingPacket(); //start advertising
+
+                    // TODO: Soms stuurt hij wel packets terug en soms helemaal niks, super raar
+
                 } else if (clhAdvData.getPacketID() == 1) {
                     //route response, add next hop data
                     ClhRoutingData clhRouteData = new ClhRoutingData();
@@ -292,6 +325,7 @@ public class ClhScan {
                         }
                     }
                 }
+
                 if (clhAdvData.getDestinationID() != mClhID && (clhAdvData.getNextHop() == mClhID ||
                         clhAdvData.getNextHop() == -1)) {
                     //normal Cluster Head (ID 0..127) add data to advertising list to forward
@@ -299,6 +333,9 @@ public class ClhScan {
                         //set the next hop to the next hop for this cluster head as defined in the routing table
                         clhAdvData.setNextHop(mClhAdvertiser.getNextHop(clhAdvData.getDestinationID()));
                     }
+
+                    mClhAdvertiser.clearAdvList();
+
                     mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, false);
                     Log.i(LOG_TAG, "Add data to advertised list, len:" + mClhAdvDataList.size());
                     Log.i(LOG_TAG, "Advertise list at " + (mClhAdvDataList.size() - 1) + ":"
@@ -306,6 +343,9 @@ public class ClhScan {
                 }
             }
         }
+
+        mClhAdvertiser.stopAdvertiseClhData();
+
     }
 
     public void setClhID(byte clhID, boolean isSink){

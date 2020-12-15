@@ -18,10 +18,11 @@ public class ClhRoutingData extends ClhAdvertisedData {
     private static final int ROUTING4 = 9;
     public static final int ROUTING_BYTES = 5;
 
+    private final String LOG_TAG = "CLH Routing";
 
 
-    private static final int CLH_ARRAY_SIZE=5+ROUTING_BYTES;
-    byte[] ClhAdvData=new byte[CLH_ARRAY_SIZE];
+    private static final int CLH_ARRAY_SIZE= 5 + ROUTING_BYTES;
+    Byte[] ClhAdvData=new Byte[CLH_ARRAY_SIZE];
 
     public ClhRoutingData() {
         //set route bytes to -1 as undefined value
@@ -33,27 +34,21 @@ public class ClhRoutingData extends ClhAdvertisedData {
     // Add the current id to the route list
     public void addToRouting(byte ID) {
         boolean routeAdded = false;
-        for (int i = ROUTING0; !routeAdded && i < ROUTING0+ROUTING_BYTES; i++) {
-            if (ClhAdvData[i] == -1) {
-                ClhAdvData[i] = ID;
-                routeAdded = true;
+        for (int i = ROUTING0; i < ROUTING0 + ROUTING_BYTES; i++) {
+            if (!routeAdded) {
+                if (ClhAdvData[i] == -1) {
+                    ClhAdvData[i] = ID;
+                    routeAdded = true;
+                }
             }
         }
         if (!routeAdded) {
-            Log.e("Packet full" ,"Packet full, route can't be added.");
+            Log.e(LOG_TAG ,"Packet full, route can't be added.");
         }
     }
 
     // Compile routing bytes into a single array and return it
     public Byte[] getRouting() {
-        Byte[] routing = new Byte[ROUTING_BYTES];
-        for (int i = 0; i < ROUTING_BYTES; i++) {
-            routing[i] = -1;
-        }
-        int j = 0;
-        for (int i = ROUTING0; i < (ROUTING_BYTES+ROUTING0); i++) {
-            routing[j] = ClhAdvData[i];
-        }
-        return routing;
+        return Arrays.copyOfRange(ClhAdvData, ClhAdvData.length - ROUTING_BYTES, ClhAdvData.length);
     }
 }

@@ -309,7 +309,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     private boolean mIsSink=false;
     private byte mClhID=2;
     private byte mClhDestID=0;
-    private byte mClhHops=0;
+    private byte mClhHops=3;  // TODO: Hops lijken niet goed te gaan?, tel 1: https://gyazo.com/d7c8f8c20fd481121b2853fe5f2ff87f     tel2: https://gyazo.com/e8fd7f612283c1c9645d5a0a12669ba6
     private byte mClhThingyID=1;
     private byte mClhThingyType=1;
     private int mClhThingySoundPower=100;
@@ -539,24 +539,18 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                             Log.i(LOG_TAG, "Array new size:" + mClhAdvertiser.getAdvertiseList().size());
                         }
                     } else if (mClhID>0) {
-                        // send discovery broadcast
-                        for (int i = 0; i < 10; i++) {
-                            byte clhPacketID = 0;
-                            mClhDiscovery.setPacketID(clhPacketID);
-                            mClhDiscovery.setSourceID(mClhID);
-                            mClhDiscovery.setDestId(mClhDestID);
-                            mClhDiscovery.setHopCount(mClhHops);
-                            mClhDiscovery.setNextHop((byte) -1); //for broadcast
-                            mClhDiscovery.addToRouting(mClhID);
-                            mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
-                            Log.i("Discovery sent", "Discovery sent");
-                            discoverySent = true;
-                            try {
-                                Thread.sleep(50);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
+
+                        byte clhPacketID = 0; // Packet ID 0 is discovery packet
+                        mClhDiscovery.setPacketID(clhPacketID);
+                        mClhDiscovery.setSourceID(mClhID); // Source ID = this CH's ID
+                        mClhDiscovery.setDestId(mClhDestID); // Destination is always the sink (0)
+                        mClhDiscovery.setHopCount(mClhHops); // Max amount of hops for this packet, TODO: HIER GAAT WAT FOUT
+                        mClhDiscovery.setNextHop((byte) -1); //for broadcast
+
+                        //mClhDiscovery.addToRouting(mClhID); // TODO: Geen idee wat dit doet, heet 0 invloed
+
+                        mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
+                        Log.i("Discovery sent", "Discovery sent");
                     }
 
                     mClhAdvertiser.nextAdvertisingPacket(); //start advertising
