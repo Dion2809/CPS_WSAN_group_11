@@ -309,7 +309,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     private boolean mIsSink=false;
     private byte mClhID=2;
     private byte mClhDestID=0;
-    private byte mClhHops=3;  // TODO: Hops lijken niet goed te gaan?, tel 1: https://gyazo.com/d7c8f8c20fd481121b2853fe5f2ff87f     tel2: https://gyazo.com/e8fd7f612283c1c9645d5a0a12669ba6
+    private byte mClhHops=0;
     private byte mClhThingyID=1;
     private byte mClhThingyType=1;
     private int mClhThingySoundPower=100;
@@ -544,10 +544,9 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         mClhDiscovery.setPacketID(clhPacketID);
                         mClhDiscovery.setSourceID(mClhID); // Source ID = this CH's ID
                         mClhDiscovery.setDestId(mClhDestID); // Destination is always the sink (0)
-                        mClhDiscovery.setHopCount(mClhHops); // Max amount of hops for this packet, TODO: HIER GAAT WAT FOUT
+                        mClhDiscovery.setHopCount(mClhHops); // Max amount of hops for this packet
                         mClhDiscovery.setNextHop((byte) -1); //for broadcast
-
-                        //mClhDiscovery.addToRouting(mClhID); // TODO: Geen idee wat dit doet, heet 0 invloed
+                        mClhDiscovery.addToRouting(mClhID)
 
                         mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
                         Log.i("Discovery sent", "Discovery sent");
@@ -733,7 +732,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
         @Override
         public int getCount() {
-            return 3;
+            return mClhHops;
         }
 
         @Override
