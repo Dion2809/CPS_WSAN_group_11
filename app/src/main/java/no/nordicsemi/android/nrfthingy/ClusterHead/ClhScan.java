@@ -280,67 +280,89 @@ public class ClhScan {
                 }
             }
             else {
-                if (clhAdvData.getPacketID() == 0) {
-
-                    Log.i("Discovery received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
-                            "Destination id: " + clhAdvData.getDestinationID() + "\n" +
-                            "Packet id: " + clhAdvData.getPacketID() + "\n" +
-                            "Next hop: " + clhAdvData.getNextHop() + "\n" +
-                            "Hops left: " + clhAdvData.getHopCounts());
-
-                    //discovery message, add id to route
-                    ClhRoutingData clhRouteData = new ClhRoutingData();
-                    clhRouteData.parcelAdvData(manufacturerData, 0);
-
-                    clhRouteData.addToRouting(clhAdvData.getSourceID()); // Moet hier source ID van incoming packet of eigen ID, hier stond eerst eigen ID maar lijkt me onlogisch
-                    clhRouteData.setSourceID(mClhID); // Sets packet source ID as this CH's id before broadcasting it again
-                    clhAdvData = (ClhAdvertisedData) clhRouteData; // Het lijkt erop dat hij alle routing info verliest, kun je krijgen met clhRouteData.getRouting()
-
-                    mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, true);
-                    mClhAdvertiser.nextAdvertisingPacket(); //start advertising
-
-                    // TODO: Soms stuurt hij wel packets terug en soms helemaal niks, super raar
-
-                } else if (clhAdvData.getPacketID() == 1) {
-                    //route response, add next hop data
-                    ClhRoutingData clhRouteData = new ClhRoutingData();
-                    clhRouteData.parcelAdvData(manufacturerData, 0);
-                    Byte[] route = clhRouteData.getRouting();
-
-                    //get the next hop
-                    byte dest = 0; //always the sink
-                    byte nextHop = -1;
-                    for (int i = 0; i < route.length; i++) {
-                        if (route[i] == mClhID) {
-                            nextHop = route[i+1];
-                            break;
-                        }
-                    }
-
-                    if (nextHop != -1) {
-                        //add it if the route is better or there was no route stored yet
-                        if (mClhAdvertiser.getNextHop(dest) == -1 ||
-                                (mClhAdvertiser.getNextHop(dest) != -1 &&
-                                        clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
-                            mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
-                        }
-                    }
-                }
-
-                if (clhAdvData.getDestinationID() != mClhID && (clhAdvData.getNextHop() == mClhID ||
-                        clhAdvData.getNextHop() == -1)) {
+                ClhRoutingData clhRouteData = new ClhRoutingData();
+                // forward packet
+                if (clhAdvData.getDestinationID() != mClhID && clhAdvData.getSourceID() != mClhID
+                        && (clhAdvData.getNextHop() == mClhID || clhAdvData.getNextHop() == -1)) {
                     //normal Cluster Head (ID 0..127) add data to advertising list to forward
+                    if (clhAdvData.getPacketID() == 0) {
+                        Log.i("Discovery received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
+                                "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+                                "Packet id: " + clhAdvData.getPacketID() + "\n" +
+                                "Next hop: " + clhAdvData.getNextHop() + "\n" +
+                                "Hops left: " + clhAdvData.getHopCounts());
+
+                        //discovery message, add id to route
+                        clhRouteData.parcelAdvData(manufacturerData, 0);
+
+                        clhRouteData.addToRouting(mClhID); // Moet hier source ID van incoming packet of eigen ID, hier stond eerst eigen ID maar lijkt me onlogisch
+                        // TODO: Soms stuurt hij wel packets terug en soms helemaal niks, super raar
+                        clhAdvData = (ClhAdvertisedData) clhRouteData;
+
+                    } else if (clhAdvData.getPacketID() == 1) {
+                        //route response, add next hop data
+                        clhRouteData.parcelAdvData(manufacturerData, 0);
+                        Byte[] route = clhRouteData.getRouting();
+
+                        //get the next hop
+                        byte dest = 0; //always the sink
+                        byte nextHop = -1;
+                        for (int i = 0; i < route.length; i++) {
+                            if (route[i] == mClhID) {
+                                nextHop = route[i+1];
+                                break;
+                            }
+                        }
+
+                        if (nextHop != -1) {
+                            //add it if the route is better or there was no route stored yet
+                            if (mClhAdvertiser.getNextHop(dest) == -1 ||
+                                    (mClhAdvertiser.getNextHop(dest) != -1 &&
+                                            clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
+                                mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
+                            }
+                        }
+                        clhAdvData = (ClhAdvertisedData) clhRouteData;
+                    }
                     if(clhAdvData.getNextHop() != -1) {
                         //set the next hop to the next hop for this cluster head as defined in the routing table
                         clhAdvData.setNextHop(mClhAdvertiser.getNextHop(clhAdvData.getDestinationID()));
                     }
 
-                    mClhAdvertiser.clearAdvList();
+//                    mClhAdvertiser.clearAdvList();
 
                     mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, false);
                     Log.i(LOG_TAG, "Add data to advertised list, len:" + mClhAdvDataList.size());
                     Log.i(LOG_TAG, "Advertise list at " + (mClhAdvDataList.size() - 1) + ":"
                             + Arrays.toString(mClhAdvDataList.get(mClhAdvDataList.size() - 1).getParcelClhData()));
+
+                } else if (clhAdvData.getDestinationID() == mClhID) {
+                    if (clhAdvData.getPacketID() == 1) { // route received at original sender
+
+                        clhRouteData.parcelAdvData(manufacturerData, 0);
+                        Byte[] route = clhRouteData.getRouting();
+
+                        byte dest = 0; //always the sink
+                        byte nextHop = -1;
+                        for (int i = 0; i < route.length; i++) {
+                            if (route[i] == mClhID) {
+                                nextHop = route[i+1];
+                                break;
+                            }
+                        }
+
+                        //add it if the route is better or there was no route stored yet
+                        if (mClhAdvertiser.getNextHop(dest) == -1 ||
+                                (mClhAdvertiser.getNextHop(dest) != -1 &&
+                                        clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
+                            mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
+                            Log.i("Route","Route added, dest: " + dest + " next hop: " +
+                                    nextHop + "total hops: " + clhRouteData.getHopCounts());
+                        }
+                    } else { //received non-route reply packet at node that isn't sink
+                        Log.e("Packet received", "Non reply packet" +
+                                " received at node that isn't a sink");
+                    }
                 }
             }
         }

@@ -283,8 +283,6 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
         public void onMicrophoneValueChangedEvent(BluetoothDevice bluetoothDevice, final byte[] data) {
             if (data != null) {
                 if (data.length != 0) {
-
-
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -296,8 +294,6 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                     //PSG edit No.1
                     //audio receive event
                     if( mStartPlayingAudio = true) {
-                        mClhAdvertiser.addAdvSoundData(data);
-//                        Log.v("MainActivity", "size of data array: " + data.length + "\n");
                         double[] y = new double[data.length];
                         double total = 0;
                         for(int i = 0; i < data.length; i++) {
@@ -328,8 +324,8 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         if(diff > 20)
 //                            Log.v("test", String.valueOf(diff));
                         if(diff > 70) {
-                            Log.v("DATA", "CLAPPING DETECTED I GUESSS!!");
-
+                            Log.i("DATA", "CLAPPING DETECTED I GUESSS!!");
+                            mClhAdvertiser.addAdvSoundData(data);
                         }
 
 //                        for(int i = 0; i < data.length; i+=2) {
@@ -421,7 +417,6 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     ClhScan mClhScanner;
     ClhProcessData mClhProcessor;
 
-    private boolean discoverySent = false;
     //End PSG edit No.2----------------------------
 
 
@@ -522,10 +517,18 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         mStartPlayingAudio = true;
                         startThingyOverlayAnimation();
 
-                        mThingySdkManager.enableThingyMicrophone(mDevice, true);
+                        // making sure that when the thingy button for listening is pressed all connected thingys start to listen.
+                        for(int i = 0; i<mThingySdkManager.getConnectedDevices().size(); i++) {
+                            BluetoothDevice device = mThingySdkManager.getConnectedDevices().get(i); // selecting the device in the list in corresponding with i
+                            Log.v("data", "Device is: " + device.getName());
+                            mThingySdkManager.enableThingyMicrophone(device, true); // enabeling all thingys to listen
+                        }
                     } else {
-                        mThingySdkManager.enableThingyMicrophone(mDevice, false);
-                        stopThingyOverlayAnimation();
+                        // making sure that when the thingy button for listening is pressed all connected thingys start to listen.
+                        for(int i = 0; i<mThingySdkManager.getConnectedDevices().size(); i++) {
+                            BluetoothDevice device = mThingySdkManager.getConnectedDevices().get(i); // selecting the device in the list in corresponding with i
+                            mThingySdkManager.enableThingyMicrophone(device, false); // disabeling all thingys from listening
+                        }                        stopThingyOverlayAnimation();
                         mStartPlayingAudio = false;
                     }
                 }
@@ -565,7 +568,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
         //timer 1000 ms for SINK to process receive data(display data to text box)
         final Handler handler=new Handler();
-        handler. postDelayed(new Runnable() {
+        handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 handler.postDelayed(this, 1000); //loop every cycle
@@ -574,12 +577,11 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                     ArrayList<ClhAdvertisedData> procList=mClhProcessor.getProcessDataList();
                     for(int i=0; i<procList.size();i++)
                     {
-                        if(i==10) break; //just display 10 line in one cycle
-                        byte[] data=procList.get(0).getParcelClhData();
-                        mClhLog.append(Arrays.toString(data));
+                        int soundPower = procList.get(i).getSoundPower();
+                        mClhLog.append("Clap detected!\r\n Sound power: " + soundPower);
                         mClhLog.append("\r\n");
-                        procList.remove(0);
                     }
+                    procList.clear();
                 }
             }
         }, 1000); //the time you want to delay in milliseconds
@@ -642,15 +644,14 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                             Log.i(LOG_TAG, "Array new size:" + mClhAdvertiser.getAdvertiseList().size());
                         }
                     } else if (mClhID>0) {
-
                         byte clhPacketID = 0; // Packet ID 0 is discovery packet
                         mClhDiscovery.setPacketID(clhPacketID);
                         mClhDiscovery.setSourceID(mClhID); // Source ID = this CH's ID
                         mClhDiscovery.setDestId(mClhDestID); // Destination is always the sink (0)
                         mClhDiscovery.setHopCount(mClhHops); // Max amount of hops for this packet
                         mClhDiscovery.setNextHop((byte) -1); //for broadcast
-                        mClhDiscovery.addToRouting(mClhID)
-
+                        mClhDiscovery.addToRouting(mClhID);
+                        //TODO retransmission
                         mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
                         Log.i("Discovery sent", "Discovery sent");
                     }
