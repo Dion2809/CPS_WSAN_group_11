@@ -47,11 +47,14 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.material.tabs.TabLayout;
+
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -83,6 +86,7 @@ import no.nordicsemi.android.nrfthingy.ClusterHead.ClhAdvertise;
 import no.nordicsemi.android.nrfthingy.ClusterHead.ClhAdvertisedData;
 import no.nordicsemi.android.nrfthingy.ClusterHead.ClhConst;
 import no.nordicsemi.android.nrfthingy.ClusterHead.ClhProcessData;
+import no.nordicsemi.android.nrfthingy.ClusterHead.ClhRoutingData;
 import no.nordicsemi.android.nrfthingy.ClusterHead.ClhScan;
 import no.nordicsemi.android.nrfthingy.ClusterHead.ClusterHead;
 import no.nordicsemi.android.nrfthingy.common.MessageDialogFragment;
@@ -404,6 +408,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     private final String LOG_TAG="CLH Sound";
 
     private ClhAdvertisedData mClhData=new ClhAdvertisedData();
+    private ClhRoutingData mClhDiscovery = new ClhRoutingData();
     private boolean mIsSink=false;
     private byte mClhID=2;
     private byte mClhDestID=0;
@@ -416,9 +421,11 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     ClhScan mClhScanner;
     ClhProcessData mClhProcessor;
 
+    private boolean discoverySent = false;
     //End PSG edit No.2----------------------------
 
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Nullable
     @Override
     public View onCreateView(@NonNull final LayoutInflater inflater,
@@ -613,7 +620,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                     //ID=127, set dummy data include 100 elements for testing purpose
                     if(mClhID==127) {
                         //mClhID = 1;
-                        byte clhPacketID=1;
+                        byte clhPacketID = 1;
                         mClhThingySoundPower = 100;
                         mClhData.setSourceID(mClhID);
                         mClhData.setPacketID(clhPacketID);
@@ -622,19 +629,31 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         mClhData.setThingyId(mClhThingyID);
                         mClhData.setThingyDataType(mClhThingyType);
                         mClhData.setSoundPower(mClhThingySoundPower);
-                        mClhAdvertiser.addAdvPacketToBuffer(mClhData,true);
+                        mClhAdvertiser.addAdvPacketToBuffer(mClhData, true);
                         for (int i = 0; i < 100; i++) {
                             ClhAdvertisedData clh = new ClhAdvertisedData();
                             clh.Copy(mClhData);
                             //Log.i(LOG_TAG, "Array old:" + Arrays.toString(clh.getParcelClhData()));
                             mClhThingySoundPower += 10;
                             clh.setSoundPower(mClhThingySoundPower);
-                            mClhAdvertiser.addAdvPacketToBuffer(clh,true);
+                            mClhAdvertiser.addAdvPacketToBuffer(clh, true);
 
                             Log.i(LOG_TAG, "Add array:" + Arrays.toString(clh.getParcelClhData()));
                             Log.i(LOG_TAG, "Array new size:" + mClhAdvertiser.getAdvertiseList().size());
                         }
-                      }
+                    } else if (mClhID>0) {
+
+                        byte clhPacketID = 0; // Packet ID 0 is discovery packet
+                        mClhDiscovery.setPacketID(clhPacketID);
+                        mClhDiscovery.setSourceID(mClhID); // Source ID = this CH's ID
+                        mClhDiscovery.setDestId(mClhDestID); // Destination is always the sink (0)
+                        mClhDiscovery.setHopCount(mClhHops); // Max amount of hops for this packet
+                        mClhDiscovery.setNextHop((byte) -1); //for broadcast
+                        mClhDiscovery.addToRouting(mClhID)
+
+                        mClhAdvertiser.addAdvPacketToBuffer(mClhDiscovery, true);
+                        Log.i("Discovery sent", "Discovery sent");
+                    }
 
                     mClhAdvertiser.nextAdvertisingPacket(); //start advertising
                 }
@@ -816,7 +835,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
         @Override
         public int getCount() {
-            return 3;
+            return mClhHops;
         }
 
         @Override

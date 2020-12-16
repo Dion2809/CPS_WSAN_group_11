@@ -1,3 +1,4 @@
+
 package no.nordicsemi.android.nrfthingy.ClusterHead;
 
 import android.bluetooth.BluetoothAdapter;
@@ -16,6 +17,7 @@ import androidx.annotation.RequiresApi;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class ClhScan {
@@ -146,6 +148,8 @@ public class ClhScan {
                 return;
             }
 
+            Log.i(LOG_TAG, "Ja hier2: " + result);
+
             SparseArray<byte[]> manufacturerData = result.getScanRecord().getManufacturerSpecificData(); //get data
             processScanData(manufacturerData);
         }
@@ -182,12 +186,15 @@ public class ClhScan {
         }
         int receiverID=manufacturerData.keyAt(0);
 
+        Log.i(LOG_TAG, "Ja hier: " + manufacturerData.toString());
+
         //reflected data (received cluster head ID = device Clh ID) -> skip
         if(mClhID==(receiverID>>8))
         {
             Log.i(LOG_TAG,"reflected data, mClhID "+mClhID +", recv:" +(receiverID>>8) );
             return;
         }
+
         Log.i(LOG_TAG,"ID data "+ (receiverID>>8)+ "  "+(receiverID&0xFF) );
 
         /* check packet has been yet recieved by searching the "unique packet ID" history list
@@ -196,7 +203,11 @@ public class ClhScan {
                         life counter: time of the packet lived in history list
           --------------*/
 
-        if (ClhScanHistoryArray.indexOfKey(manufacturerData.keyAt(0))<0)
+        ClhAdvertisedData test = new ClhAdvertisedData();
+        test.parcelAdvData(manufacturerData, 0);
+        int id = test.getPacketID();
+
+        if (ClhScanHistoryArray.indexOfKey(manufacturerData.keyAt(0))<0 || id == 0) // Not yet received or discovery packets
         {//not yet received
             //history not yet full, update new "unique packet ID" to history list, reset life counter
             if(ClhScanHistoryArray.size()<ClhConst.SCAN_HISTORY_LIST_SIZE)
@@ -208,20 +219,134 @@ public class ClhScan {
             //add receive data to Advertise list or Process List
             //Log.i(LOG_TAG," add history"+ (receiverID>>8)+ "  "+(receiverID&0xFF) );
             //Log.i(LOG_TAG," manufacturer value"+ Arrays.toString(manufacturerData.valueAt(0)) );
-
+            //id 0 is discovery packet
             clhAdvData.parcelAdvData(manufacturerData,0);
-            if(mIsSink)
-            {//if this Cluster Head is the Sink node (ID=0), add data to waiting process list
+
+//            Log.i("Packet received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
+//                    "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+//                    "Packet id: " + clhAdvData.getPacketID() + "\n" +
+//                    "Next hop: " + clhAdvData.getNextHop() + "\n" +
+//                    "Hops left: " + clhAdvData.getHopCounts() + "\n" +
+//                    Arrays.toString(clhAdvData.ClhAdvData) + "\n");
+
+            if(mIsSink) {
+                //route request received at sink, send route back
+                if ((receiverID & 0xFF) == 0) {
+
+                    Log.e(LOG_TAG, "SINK!!!!!");
+
+                    //get the route
+                    ClhRoutingData clhRouteData = new ClhRoutingData();
+                    clhRouteData.parcelAdvData(manufacturerData, 0);
+                    Byte[] route = clhRouteData.getRouting();
+                    String routeString = "";
+                    for (int i = 0; i < route.length; i++) {
+                        routeString = routeString + route[i] + " ";
+                    }
+                    Log.i("Route received: ", routeString);
+
+                    //get the next hop
+                    byte dest = route[0];
+                    List<Byte> reversed = Arrays.asList(route);
+                    Collections.reverse(reversed);
+                    byte nextHop = -1;
+                    for (byte hop : reversed) {
+                        if (hop != -1) {
+                            nextHop = hop;
+                            break;
+                        }
+                    }
+
+                    //add it if the route is better or there was no route stored yet
+                    if (mClhAdvertiser.getNextHop(dest) == -1 ||
+                            (mClhAdvertiser.getNextHop(dest) != -1 &&
+                            clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
+                        Log.e(LOG_TAG, "Better route added!!");
+
+                        mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
+                    }
+
+                    //send back reply with packet id 1
+                    clhRouteData.addToRouting(mClhID);
+                    clhRouteData.setPacketID((byte) 1);
+                    clhRouteData.setSourceID(mClhID);
+                    clhRouteData.setDestId(dest);
+                    clhRouteData.setNextHop((byte) nextHop);
+                    mClhAdvertiser.addAdvPacketToBuffer(clhRouteData, true);
+                    Log.i("Reply sent:", "Route Reply sent to: " + dest);
+                } else {// add data to waiting process list
                     mClhProcessData.addProcessPacketToBuffer(clhAdvData);
                     Log.i(LOG_TAG, "Add data to process list, len:" + mClhProcDataList.size());
+                }
             }
-            else {//normal CLuster Head (ID 0..127) add data to advertising list to forward
-                    mClhAdvertiser.addAdvPacketToBuffer(clhAdvData,false);
+            else {
+                if (clhAdvData.getPacketID() == 0) {
+
+                    Log.i("Discovery received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
+                            "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+                            "Packet id: " + clhAdvData.getPacketID() + "\n" +
+                            "Next hop: " + clhAdvData.getNextHop() + "\n" +
+                            "Hops left: " + clhAdvData.getHopCounts());
+
+                    //discovery message, add id to route
+                    ClhRoutingData clhRouteData = new ClhRoutingData();
+                    clhRouteData.parcelAdvData(manufacturerData, 0);
+
+                    clhRouteData.addToRouting(clhAdvData.getSourceID()); // Moet hier source ID van incoming packet of eigen ID, hier stond eerst eigen ID maar lijkt me onlogisch
+                    clhRouteData.setSourceID(mClhID); // Sets packet source ID as this CH's id before broadcasting it again
+                    clhAdvData = (ClhAdvertisedData) clhRouteData; // Het lijkt erop dat hij alle routing info verliest, kun je krijgen met clhRouteData.getRouting()
+
+                    mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, true);
+                    mClhAdvertiser.nextAdvertisingPacket(); //start advertising
+
+                    // TODO: Soms stuurt hij wel packets terug en soms helemaal niks, super raar
+
+                } else if (clhAdvData.getPacketID() == 1) {
+                    //route response, add next hop data
+                    ClhRoutingData clhRouteData = new ClhRoutingData();
+                    clhRouteData.parcelAdvData(manufacturerData, 0);
+                    Byte[] route = clhRouteData.getRouting();
+
+                    //get the next hop
+                    byte dest = 0; //always the sink
+                    byte nextHop = -1;
+                    for (int i = 0; i < route.length; i++) {
+                        if (route[i] == mClhID) {
+                            nextHop = route[i+1];
+                            break;
+                        }
+                    }
+
+                    if (nextHop != -1) {
+                        //add it if the route is better or there was no route stored yet
+                        if (mClhAdvertiser.getNextHop(dest) == -1 ||
+                                (mClhAdvertiser.getNextHop(dest) != -1 &&
+                                        clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
+                            mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
+                        }
+                    }
+                }
+
+                if (clhAdvData.getDestinationID() != mClhID && (clhAdvData.getNextHop() == mClhID ||
+                        clhAdvData.getNextHop() == -1)) {
+                    //normal Cluster Head (ID 0..127) add data to advertising list to forward
+                    if(clhAdvData.getNextHop() != -1) {
+                        //set the next hop to the next hop for this cluster head as defined in the routing table
+                        clhAdvData.setNextHop(mClhAdvertiser.getNextHop(clhAdvData.getDestinationID()));
+                    }
+
+                    mClhAdvertiser.clearAdvList();
+
+                    mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, false);
                     Log.i(LOG_TAG, "Add data to advertised list, len:" + mClhAdvDataList.size());
                     Log.i(LOG_TAG, "Advertise list at " + (mClhAdvDataList.size() - 1) + ":"
                             + Arrays.toString(mClhAdvDataList.get(mClhAdvDataList.size() - 1).getParcelClhData()));
+                }
             }
         }
+
+        mClhAdvertiser.stopAdvertiseClhData();
+
     }
 
     public void setClhID(byte clhID, boolean isSink){
