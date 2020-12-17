@@ -14,6 +14,8 @@ import android.util.SparseArray;
 
 import androidx.annotation.RequiresApi;
 
+import org.rajawali3d.util.ArrayUtils;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -237,18 +239,27 @@ public class ClhScan {
 
                     //get the route
                     ClhRoutingData clhRouteData = new ClhRoutingData();
+                    clhRouteData.logData();
                     clhRouteData.parcelAdvData(manufacturerData, 0);
-                    Byte[] route = clhRouteData.getRouting();
+                    clhRouteData.logData();
+                    byte[] route = clhRouteData.getRouting();
                     String routeString = "";
                     for (int i = 0; i < route.length; i++) {
                         routeString = routeString + route[i] + " ";
                     }
                     Log.i("Route received: ", routeString);
-
+                    Log.i("Discovery received:", "\n" + "Source id:" + clhAdvData.getSourceID() + "\n" +
+                            "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+                            "Packet id: " + clhAdvData.getPacketID() + "\n" +
+                            "Next hop: " + clhAdvData.getNextHop() + "\n" +
+                            "Hops left: " + clhAdvData.getHopCounts());
                     //get the next hop
                     byte dest = route[0];
-                    List<Byte> reversed = Arrays.asList(route);
-                    Collections.reverse(reversed);
+                    Byte[] reversed = new Byte[route.length];
+                    for (int i = 0; i < reversed.length; i++) {
+                        reversed[i] = route[i];
+                    }
+                    Collections.reverse(Arrays.asList(reversed));
                     byte nextHop = -1;
                     for (byte hop : reversed) {
                         if (hop != -1) {
@@ -297,12 +308,12 @@ public class ClhScan {
 
                         clhRouteData.addToRouting(mClhID); // Moet hier source ID van incoming packet of eigen ID, hier stond eerst eigen ID maar lijkt me onlogisch
                         // TODO: Soms stuurt hij wel packets terug en soms helemaal niks, super raar
-                        clhAdvData = (ClhAdvertisedData) clhRouteData;
+                        clhAdvData = clhRouteData;
 
                     } else if (clhAdvData.getPacketID() == 1) {
                         //route response, add next hop data
                         clhRouteData.parcelAdvData(manufacturerData, 0);
-                        Byte[] route = clhRouteData.getRouting();
+                        byte[] route = clhRouteData.getRouting();
 
                         //get the next hop
                         byte dest = 0; //always the sink
@@ -322,7 +333,7 @@ public class ClhScan {
                                 mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
                             }
                         }
-                        clhAdvData = (ClhAdvertisedData) clhRouteData;
+                        clhAdvData = clhRouteData;
                     }
                     if(clhAdvData.getNextHop() != -1) {
                         //set the next hop to the next hop for this cluster head as defined in the routing table
@@ -340,7 +351,7 @@ public class ClhScan {
                     if (clhAdvData.getPacketID() == 1) { // route received at original sender
 
                         clhRouteData.parcelAdvData(manufacturerData, 0);
-                        Byte[] route = clhRouteData.getRouting();
+                        byte[] route = clhRouteData.getRouting();
 
                         byte dest = 0; //always the sink
                         byte nextHop = -1;
