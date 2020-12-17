@@ -993,13 +993,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void connect() {
-        final ArrayList<Thingy> thingyList = mDatabaseHelper.getSavedDevices();
+        final List<BluetoothDevice> thingyList = mThingySdkManager.getConnectedDevices();
+        Log.i("Thingy list size", String.valueOf(thingyList.size()));
         if(thingyList.size()!=0){
             for(int i = 0; i < thingyList.size();i++){
-                BluetoothDevice devices = getBluetoothDevice(this,thingyList.get(i).getDeviceAddress());
-                mThingySdkManager.connectToThingy(this, devices, ThingyService.class);
-                final Thingy thingy = new Thingy(devices);
-                mThingySdkManager.setSelectedDevice(devices);
+                mThingySdkManager.connectToThingy(this, thingyList.get(i), ThingyService.class);
+                final Thingy thingy = new Thingy(thingyList.get(i));
+                mThingySdkManager.setSelectedDevice(thingyList.get(i));
                 updateSelectionInDb(thingy, true);
             }
         }

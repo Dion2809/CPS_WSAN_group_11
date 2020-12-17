@@ -61,6 +61,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
 import android.os.Parcelable;
+import android.os.SystemClock;
 import android.provider.Settings;
 import androidx.annotation.NonNull;
 import com.google.android.material.textfield.TextInputEditText;
@@ -80,6 +81,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import no.nordicsemi.android.nrfthingy.MainActivity;
@@ -629,6 +632,7 @@ public class InitialConfigurationActivity extends AppCompatActivity implements S
         if (requestCode == REQUEST_ENABLE_BT) {
             if (resultCode != RESULT_OK) {
                 if (mScannerFragment != null && mScannerFragment.isVisible()) {
+                    SystemClock.sleep(100);
                     mScannerFragment.dismiss();
                 }
                 // finish();
@@ -683,10 +687,13 @@ public class InitialConfigurationActivity extends AppCompatActivity implements S
 
     @Override
     public void onDeviceSelected(final BluetoothDevice device, final String name) {
-        if (mThingySdkManager != null) {
-            mThingySdkManager.connectToThingy(this, device, ThingyService.class);
+        if (mThingySdkManager != null && mScannerFragment.getDevices() != null) {
+            for (BluetoothDevice d : mScannerFragment.getDevices()) {
+                mThingySdkManager.connectToThingy(this, d, ThingyService.class);
+                Log.i("Thingy", "Connected to thingy");
+            }
+            mDevice = mScannerFragment.getDevices().get(0);
         }
-        mDevice = device;
         animateStepOne();
         showConnectionProgressDialog();
     }

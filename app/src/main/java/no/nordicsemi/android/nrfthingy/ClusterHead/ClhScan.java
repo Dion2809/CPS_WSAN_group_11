@@ -209,7 +209,7 @@ public class ClhScan {
         test.parcelAdvData(manufacturerData, 0);
         int id = test.getPacketID();
 
-        if (ClhScanHistoryArray.indexOfKey(manufacturerData.keyAt(0))<0 || id == 0) // Not yet received or discovery packets
+        if (ClhScanHistoryArray.indexOfKey(manufacturerData.keyAt(0))<0 || id == 0 || id == 1) // Not yet received or discovery packets
         {//not yet received
             //history not yet full, update new "unique packet ID" to history list, reset life counter
             if(ClhScanHistoryArray.size()<ClhConst.SCAN_HISTORY_LIST_SIZE)
@@ -288,10 +288,11 @@ public class ClhScan {
                     clhRouteData.setSourceID(mClhID);
                     clhRouteData.setDestId(dest);
                     clhRouteData.setNextHop((byte) nextHop);
+                    clhRouteData.setHopCount((byte) 0);
                     mClhAdvertiser.addAdvPacketToBuffer(clhRouteData, true);
                     Log.i("Reply sent:", "Route Reply sent to: " + dest);
                     clhRouteData.logData();
-                } else {// add data to waiting process list
+                } else if (clhAdvData.getPacketID() > 1){// add data to waiting process list
                     mClhProcessData.addProcessPacketToBuffer(clhAdvData);
                     Log.i(LOG_TAG, "Add data to process list, len:" + mClhProcDataList.size());
                 }
@@ -317,6 +318,7 @@ public class ClhScan {
                         clhAdvData = clhRouteData;
 
                     } else if (clhAdvData.getPacketID() == 1) {
+                        Log.i("Reply received", "Reply received");
                         //route response, add next hop data
                         clhRouteData.parcelAdvData(manufacturerData, 0);
                         byte[] route = clhRouteData.getRouting();
@@ -369,10 +371,10 @@ public class ClhScan {
                         //add it if the route is better or there was no route stored yet
                         if (mClhAdvertiser.getNextHop(dest) == -1 ||
                                 (mClhAdvertiser.getNextHop(dest) != -1 &&
-                                        clhRouteData.getHopCounts() < mClhAdvertiser.hopsToDest(dest))) {
-                            mClhAdvertiser.addRoute(dest, nextHop, clhRouteData.getHopCounts());
+                                        clhRouteData.getHopCounts() + 1 < mClhAdvertiser.hopsToDest(dest))) {
+                            mClhAdvertiser.addRoute(dest, nextHop, (byte) (clhRouteData.getHopCounts() + 1));
                             Log.i("Route","Route added, dest: " + dest + " next hop: " +
-                                    nextHop + "total hops: " + clhRouteData.getHopCounts());
+                                    nextHop + " total hops: " + clhRouteData.getHopCounts() + 1);
                         }
                     } else { //received non-route reply packet at node that isn't sink
                         Log.e("Packet received", "Non reply packet" +
