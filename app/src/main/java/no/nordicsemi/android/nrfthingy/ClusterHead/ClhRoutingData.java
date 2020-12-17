@@ -19,10 +19,7 @@ public class ClhRoutingData extends ClhAdvertisedData {
     public static final int ROUTING_BYTES = 5;
 
     private final String LOG_TAG = "CLH Routing";
-
-
-    private static final int CLH_ARRAY_SIZE= 5 + ROUTING_BYTES;
-    Byte[] ClhAdvData=new Byte[CLH_ARRAY_SIZE];
+    private static final int CLH_ARRAY_SIZE = 5 + ROUTING_BYTES;
 
     public ClhRoutingData() {
         //set route bytes to -1 as undefined value
@@ -48,7 +45,16 @@ public class ClhRoutingData extends ClhAdvertisedData {
     }
 
     // Compile routing bytes into a single array and return it
-    public Byte[] getRouting() {
+    public byte[] getRouting() {
         return Arrays.copyOfRange(ClhAdvData, ClhAdvData.length - ROUTING_BYTES, ClhAdvData.length);
+    }
+
+    public String logData() {
+        StringBuilder packet = new StringBuilder();
+        for (int i = 0; i < ClhAdvData.length; i++) {
+            packet.append(ClhAdvData[i]);
+        }
+        Log.i("Data","Data: " + packet);
+        return packet.toString();
     }
 }

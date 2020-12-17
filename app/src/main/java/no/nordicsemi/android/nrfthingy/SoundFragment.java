@@ -136,7 +136,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     private int F0 = 2500; // 1200
     private int F1 = 1200;
     private double BW0 = 0.33;
-    private int gain0 = 40;
+    private double gain0 = 40;
 
     private double A0 = pow(10, gain0/40);
     private double w0 = 2*PI*F0/Fs;
@@ -323,7 +323,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         double diff = avg0 - avg1;
                         if(diff > 20)
 //                            Log.v("test", String.valueOf(diff));
-                        if(diff > 70) {
+                        if(diff > 90) {
                             Log.i("DATA", "CLAPPING DETECTED I GUESSS!!");
                             mClhAdvertiser.addAdvSoundData(data);
                         }

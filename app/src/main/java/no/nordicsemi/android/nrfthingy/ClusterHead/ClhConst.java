@@ -2,7 +2,7 @@ package no.nordicsemi.android.nrfthingy.ClusterHead;
 /*important constants*/
 public class ClhConst {
     //for scanner
-    public static final String clusterHeadName="CH";
+    public static final String clusterHeadName="CH11";
     public static final int MAX_ADVERTISE_LIST_ITEM=512; //max items in waiting list for advertising
     public static final int ADVERTISING_INTERVAL=200; //default 200 ms interval for each advertising packet
     //----------
