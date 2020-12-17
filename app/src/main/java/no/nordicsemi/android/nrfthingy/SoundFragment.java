@@ -47,6 +47,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -92,15 +93,32 @@ import no.nordicsemi.android.nrfthingy.ClusterHead.ClusterHead;
 import no.nordicsemi.android.nrfthingy.common.MessageDialogFragment;
 import no.nordicsemi.android.nrfthingy.common.PermissionRationaleDialogFragment;
 import no.nordicsemi.android.nrfthingy.common.Utils;
+import no.nordicsemi.android.nrfthingy.database.DatabaseHelper;
 import no.nordicsemi.android.nrfthingy.sound.FrequencyModeFragment;
 import no.nordicsemi.android.nrfthingy.sound.PcmModeFragment;
 import no.nordicsemi.android.nrfthingy.sound.SampleModeFragment;
 import no.nordicsemi.android.nrfthingy.sound.ThingyMicrophoneService;
+import no.nordicsemi.android.nrfthingy.thingy.Thingy;
 import no.nordicsemi.android.nrfthingy.widgets.VoiceVisualizer;
 import no.nordicsemi.android.thingylib.ThingyListener;
 import no.nordicsemi.android.thingylib.ThingyListenerHelper;
 import no.nordicsemi.android.thingylib.ThingySdkManager;
 import no.nordicsemi.android.thingylib.utils.ThingyUtils;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import no.nordicsemi.android.nrfthingy.common.ScannerFragmentListener;
+import no.nordicsemi.android.nrfthingy.common.Utils;
+import no.nordicsemi.android.nrfthingy.database.DatabaseHelper;
+import no.nordicsemi.android.nrfthingy.thingy.Thingy;
+import no.nordicsemi.android.thingylib.ThingyListener;
+import no.nordicsemi.android.thingylib.ThingyListenerHelper;
+import no.nordicsemi.android.thingylib.ThingySdkManager;
+import no.nordicsemi.android.thingylib.utils.ThingyUtils;
+
 
 import static java.lang.Math.PI;
 import static java.lang.Math.cos;
@@ -131,7 +149,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
     private boolean soundDetected = false;
     private int soundCounter = 0;
-    private final int WINDOW_RANGE = 1000;
+    private final int WINDOW_RANGE = 4000;
     private int Fs = 8000;
     private int F0 = 2500; // 1200
     private int F1 = 1200;
@@ -166,7 +184,12 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
     private double xmem1 = 0, xmem2 = 0, ymem1 = 0, ymem2 = 0;
 
+    private DatabaseHelper mDatabaseHelper;
+    private int mCurrentDelay;
+    private int mCurrentIntensity;
+    private int mCurrentLedMode;
 
+    private int mSelectedColorIndex = 100;
 
     private ThingyListener mThingyListener = new ThingyListener() {
         private Handler mHandler = new Handler();
@@ -322,31 +345,34 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
                         double diff = avg0 - avg1;
                         if(diff > 20)
-//                            Log.v("test", String.valueOf(diff));
-                        if(diff > 70) {
+                            Log.v("test", String.valueOf(diff));
+                        /*if(diff > 70) {
                             Log.i("DATA", "CLAPPING DETECTED I GUESSS!!");
-                            mClhAdvertiser.addAdvSoundData(data);
-                        }
+                            setupLedMode(ThingyUtils.ONE_SHOT);
 
-//                        for(int i = 0; i < data.length; i+=2) {
-//                           if(Integer.parseInt(String.valueOf(data[i])) > 70) {
-//                               if(!soundDetected) {
-////                                   Toast.makeText(context, "CLAP DETECTED!!!", Toast.LENGTH_LONG).show();
-//                                   Log.v("MESSAGE", "CLAP DETECTED!!!");
-//                                   soundDetected = true;
-//                                   soundCounter = 0;
-//                               } else {
-//                                   soundCounter = 0;
-//                               }
-//                           } else if(soundDetected || soundCounter != 0) {
-//                               soundCounter++;
-//                           }
-//                           if(soundCounter >= WINDOW_RANGE) {
-//                               soundCounter = 0;
-//                               soundDetected = false;
-//                           }
-//
-//                        }
+                            mClhAdvertiser.addAdvSoundData(data);
+                        }*/
+
+                        for(int i = 0; i < data.length; i+=2) {
+                           if(Integer.parseInt(String.valueOf(data[i])) > 70) {
+                               if(!soundDetected) {
+                                   //Toast.makeText(context, "CLAP DETECTED!!!", Toast.LENGTH_LONG).show();
+                                   Log.v("MESSAGE", "CLAP DETECTED!!!");
+                                   setupLedMode(ThingyUtils.ONE_SHOT);
+                                   soundDetected = true;
+                                  soundCounter = 0;
+                              } else {
+                                   soundCounter = 0;
+                               }
+                          } else if(soundDetected || soundCounter != 0) {
+                               soundCounter++;
+                           }
+                           if(soundCounter >= WINDOW_RANGE) {
+                               soundCounter = 0;
+                              soundDetected = false;
+                           }
+
+                        }
 
 
 
@@ -357,6 +383,92 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
             }
         }
     };
+
+    private void setupLedMode(final byte ledMode) {
+        if (mDevice != null) {
+            final Thingy thingy = mDatabaseHelper.getSavedDevice(mDevice.getAddress());
+            final BluetoothDevice device = mDevice;
+            if (mThingySdkManager.isConnected(mDevice)) {
+                switch (ledMode) {
+
+                    case ThingyUtils.ONE_SHOT:
+                        if (mCurrentLedMode != ThingyUtils.OFF) {
+                            if (mCurrentLedMode != ThingyUtils.CONSTANT) {
+                                final int ledIntensity = mCurrentIntensity = 100;
+                                int colorIndex = mSelectedColorIndex;
+                                if (colorIndex == 0) {
+                                    colorIndex = mSelectedColorIndex = getColorFromIndex(colorIndex);
+                                }
+                                mThingySdkManager.setOneShotLedMode(device, ThingyUtils.LED_RED, 100);
+                            } else {
+
+                                mThingySdkManager.setOneShotLedMode(device, ThingyUtils.LED_RED, 100);
+
+                            }
+                        } else {
+                            mCurrentIntensity = 100;
+                            mCurrentDelay = 5000;
+
+                            mThingySdkManager.setOneShotLedMode(device, ThingyUtils.LED_RED, 100);
+                        }
+                        mCurrentLedMode = ThingyUtils.ONE_SHOT;
+                        break;
+                    case ThingyUtils.OFF:
+                        if (mCurrentLedMode != ThingyUtils.OFF) {
+                            mThingySdkManager.turnOffLed(device);
+                        }
+                        mCurrentLedMode = ThingyUtils.OFF;
+                        break;
+                }
+            } else {
+                Utils.showToast(getActivity(), "Please configureThingy to " + thingy.getDeviceName() + " before you proceed!");
+            }
+        }
+    }
+
+    private int getColorFromIndex(final int colorIndex) {
+        switch (colorIndex) {
+            case ThingyUtils.LED_RED:
+                return Color.RED;
+            case ThingyUtils.LED_GREEN:
+                return Color.GREEN;
+            case ThingyUtils.LED_YELLOW:
+                return Color.YELLOW;
+            case ThingyUtils.LED_BLUE:
+                return Color.BLUE;
+            case ThingyUtils.LED_PURPLE:
+                return Color.MAGENTA;
+            case ThingyUtils.LED_CYAN:
+                return Color.CYAN;
+            case ThingyUtils.LED_WHITE:
+                return Color.WHITE;
+            default:
+                return Color.CYAN;
+        }
+    }
+
+     private int getIndexFromColor(final int color) {
+        switch (color) {
+            case Color.RED:
+                return ThingyUtils.LED_RED;
+            case Color.GREEN:
+                return ThingyUtils.LED_GREEN;
+            case Color.YELLOW:
+                return ThingyUtils.LED_YELLOW;
+            case Color.BLUE:
+                return ThingyUtils.LED_BLUE;
+            case Color.MAGENTA:
+                return ThingyUtils.LED_PURPLE;
+            case Color.CYAN:
+                return ThingyUtils.LED_CYAN;
+            case Color.WHITE:
+                return ThingyUtils.LED_WHITE;
+            default:
+                return ThingyUtils.LED_CYAN;
+        }
+    }
+
+
 
     private BroadcastReceiver mAudioRecordBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -392,6 +504,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
             mDevice = getArguments().getParcelable(Utils.CURRENT_DEVICE);
         }
         mThingySdkManager = ThingySdkManager.getInstance();
+        mDatabaseHelper = new DatabaseHelper(getActivity());
     }
 
 
