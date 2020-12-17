@@ -231,6 +231,11 @@ public class ClhScan {
 //                    "Hops left: " + clhAdvData.getHopCounts() + "\n" +
 //                    Arrays.toString(clhAdvData.ClhAdvData) + "\n");
 
+            Log.i("Packet received", "Source id:" + clhAdvData.getSourceID() + "\n" +
+                    "Destination id: " + clhAdvData.getDestinationID() + "\n" +
+                    "Packet id: " + clhAdvData.getPacketID() + "\n" +
+                    "Next hop: " + clhAdvData.getNextHop() + "\n" +
+                    "Hops left: " + clhAdvData.getHopCounts());
             if(mIsSink) {
                 //route request received at sink, send route back
                 if ((receiverID & 0xFF) == 0) {
@@ -285,6 +290,7 @@ public class ClhScan {
                     clhRouteData.setNextHop((byte) nextHop);
                     mClhAdvertiser.addAdvPacketToBuffer(clhRouteData, true);
                     Log.i("Reply sent:", "Route Reply sent to: " + dest);
+                    clhRouteData.logData();
                 } else {// add data to waiting process list
                     mClhProcessData.addProcessPacketToBuffer(clhAdvData);
                     Log.i(LOG_TAG, "Add data to process list, len:" + mClhProcDataList.size());
@@ -340,8 +346,6 @@ public class ClhScan {
                         clhAdvData.setNextHop(mClhAdvertiser.getNextHop(clhAdvData.getDestinationID()));
                     }
 
-//                    mClhAdvertiser.clearAdvList();
-
                     mClhAdvertiser.addAdvPacketToBuffer(clhAdvData, false);
                     Log.i(LOG_TAG, "Add data to advertised list, len:" + mClhAdvDataList.size());
                     Log.i(LOG_TAG, "Advertise list at " + (mClhAdvDataList.size() - 1) + ":"
@@ -375,6 +379,10 @@ public class ClhScan {
                                 " received at node that isn't a sink");
                     }
                 }
+            }
+            for (int i = 0; i < mClhAdvertiser.getAdvertiseList().size(); i++) {
+                mClhAdvertiser.nextAdvertisingPacket();
+                Log.i("Packet sent", "Packet sent");
             }
         }
 

@@ -404,7 +404,6 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
     private final String LOG_TAG="CLH Sound";
 
     private ClhAdvertisedData mClhData=new ClhAdvertisedData();
-    private ClhRoutingData mClhDiscovery = new ClhRoutingData();
     private boolean mIsSink=false;
     private byte mClhID=2;
     private byte mClhDestID=0;
@@ -619,6 +618,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                         Log.i(LOG_TAG, "set ClhID:"+mClhID);
                     }
 
+                    ClhRoutingData mClhDiscovery = new ClhRoutingData();
                     //ID=127, set dummy data include 100 elements for testing purpose
                     if(mClhID==127) {
                         //mClhID = 1;
