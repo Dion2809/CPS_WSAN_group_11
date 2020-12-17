@@ -6,6 +6,8 @@ import android.util.SparseArray;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static no.nordicsemi.android.nrfthingy.ClusterHead.ClhRoutingData.ROUTING_BYTES;
+
 public class ClhAdvertisedData   {
     private static final int SOURCE_CLH_ID_POS=0;
     private static final int PACKET_CLH_ID_POS=1;
@@ -17,7 +19,7 @@ public class ClhAdvertisedData   {
     private static final int SOUND_POWER_POSH=7;
     private static final int SOUND_POWER_POSL=8;
 
-    private static final int CLH_ARRAY_SIZE = SOUND_POWER_POSL+1;
+    private static final int CLH_ARRAY_SIZE = NEXT_HOP + ROUTING_BYTES + 1;
     byte[] ClhAdvData=new byte[CLH_ARRAY_SIZE];
 
 

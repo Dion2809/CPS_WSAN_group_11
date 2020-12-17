@@ -40,6 +40,7 @@ package no.nordicsemi.android.nrfthingy.common;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.bluetooth.BluetoothDevice;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -50,6 +51,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AlertDialog;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -58,7 +61,10 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,6 +96,12 @@ public class ScannerFragment extends DialogFragment {
 
     private ParcelUuid mUuid;
     private boolean mIsScanning = false;
+
+    public List<BluetoothDevice> getDevices() {
+        return devices;
+    }
+
+    private List<BluetoothDevice> devices = new ArrayList<>();
 
     /**
      * Static implementation of fragment so that it keeps data when phone orientation is changed For standard BLE Service UUID, we can filter devices using normal android provided command
@@ -248,6 +260,27 @@ public class ScannerFragment extends DialogFragment {
         @Override
         public void onBatchScanResults(final List<ScanResult> results) {
             if (results.size() > 0 && troubleshootView.getVisibility() == View.VISIBLE) {
+                Log.i("Results", "Length: " + results.size());
+                if (results.size() > 4) {
+                    List<Integer> rssis = new ArrayList<>();
+                    for (int i = 0; i < results.size(); i++) {
+                        rssis.add(results.get(i).getRssi());
+                    }
+                    Integer[] sorted = new Integer[results.size()];
+                    for (int i = 0; i < results.size(); i++) {
+                        sorted[i] = rssis.get(i);
+                    }
+                    Arrays.sort(sorted, Collections.reverseOrder());
+                    for (int i = 0; i < 4; i++) {
+                        devices.add(results.get(rssis.indexOf(sorted[i])).getDevice());
+                        Log.i("Device", "Added " + results.get(rssis.indexOf(sorted[i])).getDevice().getName());
+                    }
+                } else {
+                    for (int i = 0; i < results.size(); i++) {
+                        devices.add(results.get(i).getDevice());
+                        Log.i("Device", "Added " + results.get(i).getDevice().getName());
+                    }
+                }
                 troubleshootView.setVisibility(View.GONE);
             }
             mAdapter.update(results);

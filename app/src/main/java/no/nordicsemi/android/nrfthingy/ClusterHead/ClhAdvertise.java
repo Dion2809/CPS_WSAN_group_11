@@ -204,7 +204,7 @@ public class ClhAdvertise {
                 mCurrentPacketID++;
                 data.setPacketID(mCurrentPacketID);
             }
-            else
+            else if(!isOrginal)
             {//received packet over BLE scan, from other cluster head -> increase hopscount
                 byte hopcounts=data.getHopCounts();
                 hopcounts++;
