@@ -993,20 +993,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void connect() {
-        final List<BluetoothDevice> thingyList = mThingySdkManager.getConnectedDevices();
-        Log.i("Thingy list size", String.valueOf(thingyList.size()));
-        if(thingyList.size()!=0){
-            for(int i = 0; i < thingyList.size();i++){
-                mThingySdkManager.connectToThingy(this, thingyList.get(i), ThingyService.class);
-                final Thingy thingy = new Thingy(thingyList.get(i));
-                mThingySdkManager.setSelectedDevice(thingyList.get(i));
-                updateSelectionInDb(thingy, true);
-            }
-        }
-//        mThingySdkManager.connectToThingy(this, mDevice, ThingyService.class);
-//        final Thingy thingy = new Thingy(mDevice);
-//        mThingySdkManager.setSelectedDevice(mDevice);
-//        updateSelectionInDb(thingy, true);
+//        final List<BluetoothDevice> thingyList = mThingySdkManager.getConnectedDevices();
+//        Log.v("data", String.valueOf(thingyList.size()));
+//        if(thingyList.size()!=0){
+//            for(int i = 0; i < thingyList.size();i++){
+//                mThingySdkManager.connectToThingy(this, thingyList.get(i), ThingyService.class);
+//                final Thingy thingy = new Thingy(thingyList.get(i));
+//                mThingySdkManager.setSelectedDevice(thingyList.get(i));
+//                updateSelectionInDb(thingy, true);
+//            }
+//        }
+        mThingySdkManager.connectToThingy(this, mDevice, ThingyService.class);
+        final Thingy thingy = new Thingy(mDevice);
+        mThingySdkManager.setSelectedDevice(mDevice);
+        updateSelectionInDb(thingy, true);
 
 
     }
@@ -1620,7 +1620,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         final BluetoothLeScannerCompat scanner = BluetoothLeScannerCompat.getScanner();
         final ScanSettings settings = new ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0).setUseHardwareBatchingIfSupported(false).setUseHardwareFilteringIfSupported(false).build();
-        Log.v("data",settings.toString());
         final List<ScanFilter> filters = new ArrayList<>();
         filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(ThingyUtils.THINGY_BASE_UUID)).build());
         scanner.startScan(filters, settings, mScanCallback);
@@ -1672,6 +1671,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if (mAddress != null && mAddress.equals(device.getAddress())) {
                 mProgressHandler.removeCallbacks(mProgressDialogRunnable);
                 stopScan();
+                Log.v("data", device.toString());
                 connect(device);
                 mAddress = null;
                 return;
@@ -1683,6 +1683,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     public void run() {
                         mProgressHandler.removeCallbacks(mProgressDialogRunnable);
                         stopScan();
+                        Log.v("data", device.toString() + " oooooooooooooooooooooo");
                         connect();
                     }
                 });

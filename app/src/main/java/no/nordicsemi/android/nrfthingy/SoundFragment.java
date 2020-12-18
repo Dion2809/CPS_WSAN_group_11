@@ -149,7 +149,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
     private boolean soundDetected = false;
     private int soundCounter = 0;
-    private final int WINDOW_RANGE = 4000;
+    private final int WINDOW_RANGE = 1;
     private int Fs = 8000;
     private int F0 = 2500; // 1200
     private int F1 = 1200;
@@ -304,6 +304,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
 
         @Override
         public void onMicrophoneValueChangedEvent(BluetoothDevice bluetoothDevice, final byte[] data) {
+            Log.v("data", bluetoothDevice.getAddress());
             if (data != null) {
                 if (data.length != 0) {
                     mHandler.post(new Runnable() {
@@ -353,12 +354,12 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                             mClhAdvertiser.addAdvSoundData(data);
                         }*/
 
-                        for(int i = 0; i < data.length; i+=2) {
-                           if(Integer.parseInt(String.valueOf(data[i])) > 70) {
+//                        for(int i = 0; i < data.length; i+=2) {
+                           if(diff > 70) {
                                if(!soundDetected) {
                                    //Toast.makeText(context, "CLAP DETECTED!!!", Toast.LENGTH_LONG).show();
                                    Log.v("MESSAGE", "CLAP DETECTED!!!");
-                                   setupLedMode(ThingyUtils.ONE_SHOT);
+                                   setupLedMode(ThingyUtils.ONE_SHOT, bluetoothDevice);
                                    soundDetected = true;
                                   soundCounter = 0;
                               } else {
@@ -372,7 +373,7 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
                               soundDetected = false;
                            }
 
-                        }
+//                        }
 
 
 
@@ -384,11 +385,11 @@ public class SoundFragment extends Fragment implements PermissionRationaleDialog
         }
     };
 
-    private void setupLedMode(final byte ledMode) {
-        if (mDevice != null) {
-            final Thingy thingy = mDatabaseHelper.getSavedDevice(mDevice.getAddress());
-            final BluetoothDevice device = mDevice;
-            if (mThingySdkManager.isConnected(mDevice)) {
+    private void setupLedMode(final byte ledMode, BluetoothDevice device) {
+        if (device != null) {
+            final Thingy thingy = mDatabaseHelper.getSavedDevice(device.getAddress());
+//            final BluetoothDevice device = mDevice;
+            if (mThingySdkManager.isConnected(device)) {
                 switch (ledMode) {
 
                     case ThingyUtils.ONE_SHOT:
